@@ -3,7 +3,7 @@ import Config
 # Configure your database
 config :crawl, Crawl.Repo,
   username: "postgres",
-  password: "postgres",
+  password: "postgrespw",
   hostname: "localhost",
   database: "crawl_dev",
   stacktrace: true,

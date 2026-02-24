@@ -22,6 +22,10 @@ end
 
 config :crawl, CrawlWeb.Endpoint, http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+config :crawl,
+  google_sheet_id: System.get_env("GOOGLE_SHEET_ID"),
+  google_sheet_range: System.get_env("GOOGLE_SHEET_RANGE")
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

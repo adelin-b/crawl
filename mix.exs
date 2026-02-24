@@ -10,6 +10,7 @@ defmodule Crawl.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
+      test_coverage: [tool: ExCoveralls],
       listeners: [Phoenix.CodeReloader]
     ]
   end
@@ -26,7 +27,14 @@ defmodule Crawl.MixProject do
 
   def cli do
     [
-      preferred_envs: [precommit: :test]
+      preferred_envs: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test,
+        "coveralls.cobertura": :test,
+        precommit: :test
+      ]
     ]
   end
 
@@ -55,7 +63,9 @@ defmodule Crawl.MixProject do
       {:goth, "~> 1.4"},
       {:google_api_sheets, "~> 0.35"},
       {:google_api_drive, "~> 0.32"},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:mox, "~> 1.0", only: :test},
+      {:excoveralls, "~> 0.18", only: :test}
     ]
   end
 

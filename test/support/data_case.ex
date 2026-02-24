@@ -24,6 +24,7 @@ defmodule Crawl.DataCase do
       import Ecto.Changeset
       import Ecto.Query
       import Crawl.DataCase
+      use Oban.Testing, repo: Crawl.Repo
     end
   end
 

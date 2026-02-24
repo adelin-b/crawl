@@ -20,6 +20,20 @@ config :crawl, CrawlWeb.Endpoint,
   secret_key_base: "uKYwJB94YcX5azhsdnMjk7R9xXmtpoqUh9x1s3v5NdVSLQpd6tjS1DzppKnXNJxn",
   server: false
 
+config :crawl, :google_sheets, Crawl.Integrations.GoogleSheetsMock
+
+config :crawl, :python_crawler, Crawl.Integrations.PythonCrawlerMock
+
+config :crawl, :artifact_dir, "test/tmp/artifacts"
+
+config :crawl, :start_goth, false
+
+config :crawl, Oban,
+  repo: Crawl.Repo,
+  queues: false,
+  plugins: false,
+  testing: :manual
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 
