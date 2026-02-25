@@ -22,7 +22,11 @@ config :crawl, CrawlWeb.Endpoint,
 
 config :crawl, :google_sheets, Crawl.Integrations.GoogleSheetsMock
 
+config :crawl, :google_drive, Crawl.Integrations.GoogleDriveMock
+
 config :crawl, :python_crawler, Crawl.Integrations.PythonCrawlerMock
+
+config :crawl, :upload_webhook, Crawl.Integrations.UploadWebhookMock
 
 config :crawl, :artifact_dir, "test/tmp/artifacts"
 

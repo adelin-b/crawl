@@ -22,6 +22,11 @@ The system operates in a pipeline:
     *   Triggered after a successful crawl.
     *   Takes the generated artifacts (Markdown + assets).
     *   Uploads them to a specific Google Drive folder.
+    *   Enqueues a **Webhook Worker** job upon successful upload.
+
+4.  **Webhook Worker (Oban Job - Optional)**:
+    *   If `UPLOAD_WEBHOOK_URL` is configured, sends a POST request to notify an external system.
+    *   Includes the `root_google_drive_folder_id`, `url`, and `crawl_key` in the JSON payload.
 
 ## Software Stack
 
@@ -59,17 +64,52 @@ config :crawl,
 
 ## Configuration
 
-The application requires configuration for:
+The application requires various environment variables to be set for it to run properly. 
+You can copy `.env.example` to `.env` and edit the values, then source it before starting the application:
 
-*   **Google Credentials**: Service account or OAuth tokens for Sheets and Drive access.
-*   **Sheet ID**: The specific Google Sheet to monitor.
-*   **URL Column**: The column letter (e.g., "A", "C") or header name where URLs are located.
-*   **Drive Folder ID**: The destination folder in Google Drive.
-*   **Python Path**: Python executable used to run crawler scripts (for example, `.venv/bin/python`).
-*   **Crawler Ingest Path**: Optional custom location of the `crawler-ingest` scripts.
+```bash
+cp .env.example .env
+source .env
+```
+
+Here are the environment variables that control the application:
+
+### Google Integration
+*   `GOOGLE_APPLICATION_CREDENTIALS_JSON`: The raw JSON string of your Google Cloud service account credentials used for Sheets and Drive access.
+*   `GOOGLE_SHEET_ID`: The ID of the specific Google Sheet to monitor (from the URL).
+*   `GOOGLE_SHEET_RANGE`: The range in the sheet to read/write (e.g., `Sheet1!A1:Z`).
+*   `GOOGLE_SHEET_URL_HEADER`: The column header label where URLs are located (defaults to `website_url`).
+*   `GOOGLE_SHEET_STATUS_HEADER`: The column header label for tracking progress (defaults to `status`).
+*   `GOOGLE_DRIVE_FOLDER_ID`: The destination folder ID in Google Drive to upload crawled artifacts.
+*   `UPLOAD_WEBHOOK_URL`: (Optional) The webhook endpoint to call after successful upload.
+
+### External Crawler & AI
+*   `SCALEWAY_API_KEY`: API key for Scaleway (used by the Python crawler for Pixtral image-to-text processing).
+
+### Application & Database (Standard)
+*   `DATABASE_URL`: Connection string to your PostgreSQL database (required in production).
+*   `SECRET_KEY_BASE`: Secret key for Phoenix sessions (required in production).
+*   `PORT`: Port to run the Phoenix application on (defaults to `4000`).
+
+*(Note: **Python Path** and **Crawler Ingest Path** can be configured in your `config.exs` or `dev.exs` as described in the Setup section above).*
 
 ## Job Lifecycle
 
 1.  **Sync**: `SheetWatcher` -> Enqueues `UrlCrawler` jobs.
 2.  **Crawl**: `UrlCrawler` -> Runs Python script -> Enqueues `DriveUploader` jobs.
-3.  **Upload**: `DriveUploader` -> Uploads to Drive -> Marks job complete.
+3.  **Upload**: `DriveUploader` -> Uploads to Drive -> Enqueues `Webhook Worker` job.
+4.  **Webhook** (Optional): `Webhook Worker` -> POSTs JSON payload to external system.
+
+### Webhook Payload Example
+
+If `UPLOAD_WEBHOOK_URL` is configured, a JSON payload is sent upon successful upload to Drive:
+
+```json
+{
+  "root_google_drive_folder_id": "1abcXYZ...",
+  "url": "https://example.com",
+  "crawl_key": "crawl_123_abc"
+}
+```
+
+If `UPLOAD_WEBHOOK_URL` is unset or empty, this final webhook step is simply skipped.

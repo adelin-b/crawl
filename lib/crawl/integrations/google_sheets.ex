@@ -4,14 +4,15 @@ defmodule Crawl.Integrations.GoogleSheets do
   """
 
   @callback fetch_rows(String.t(), String.t()) :: {:ok, [[String.t()]]} | {:error, any()}
-  @callback append_status(String.t(), String.t(), integer(), String.t()) :: :ok | {:error, any()}
+  @callback append_status(String.t(), String.t(), integer(), integer(), String.t()) ::
+              :ok | {:error, any()}
 
   def fetch_rows(spreadsheet_id, range) do
     impl().fetch_rows(spreadsheet_id, range)
   end
 
-  def append_status(spreadsheet_id, sheet_name, row_index, status) do
-    impl().append_status(spreadsheet_id, sheet_name, row_index, status)
+  def append_status(spreadsheet_id, sheet_name, row_index, col_index, status) do
+    impl().append_status(spreadsheet_id, sheet_name, row_index, col_index, status)
   end
 
   defp impl do
@@ -55,10 +56,12 @@ defmodule Crawl.Integrations.GoogleSheets.Impl do
   end
 
   @impl true
-  def append_status(spreadsheet_id, sheet_name, row_index, status) do
-    # Status is in Column O (15th column)
+  def append_status(spreadsheet_id, sheet_name, row_index, col_index, status) do
+    # Convert col_index (0-based) to column letter(s) (e.g. 0 -> A, 14 -> O, 26 -> AA)
+    col_letter = col_index_to_letter(col_index)
+
     # We assume the row_index is 1-based as per Google Sheets API
-    range = "#{sheet_name}!O#{row_index}"
+    range = "#{sheet_name}!#{col_letter}#{row_index}"
 
     value_range = %ValueRange{
       values: [[status]]
@@ -84,5 +87,19 @@ defmodule Crawl.Integrations.GoogleSheets.Impl do
     e ->
       Logger.error("Failed to update status in Google Sheets: #{inspect(e)}")
       {:error, e}
+  end
+
+  defp col_index_to_letter(index) do
+    do_col_index_to_letter(index, "")
+  end
+
+  defp do_col_index_to_letter(index, acc) when index < 26 do
+    <<index + ?A>> <> acc
+  end
+
+  defp do_col_index_to_letter(index, acc) do
+    rem = rem(index, 26)
+    quotient = div(index, 26) - 1
+    do_col_index_to_letter(quotient, <<rem + ?A>> <> acc)
   end
 end

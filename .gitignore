@@ -29,3 +29,6 @@ crawl-*.tar
 /priv/python/
 
 
+
+# Environment variables
+.env

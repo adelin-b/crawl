@@ -11,6 +11,19 @@ defmodule Crawl.Assets.Archiver do
     end
   end
 
+  def unzip(zip_path, dest_dir) do
+    if File.exists?(zip_path) do
+      File.mkdir_p!(dest_dir)
+
+      case :zip.unzip(String.to_charlist(zip_path), [{:cwd, String.to_charlist(dest_dir)}]) do
+        {:ok, _files} -> {:ok, dest_dir}
+        {:error, reason} -> {:error, reason}
+      end
+    else
+      {:error, :zip_not_found}
+    end
+  end
+
   defp do_zip_directory(source_dir, zip_path) do
     files =
       list_relative_files(source_dir)

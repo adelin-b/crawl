@@ -24,7 +24,11 @@ config :crawl, CrawlWeb.Endpoint, http: [port: String.to_integer(System.get_env(
 
 config :crawl,
   google_sheet_id: System.get_env("GOOGLE_SHEET_ID"),
-  google_sheet_range: System.get_env("GOOGLE_SHEET_RANGE")
+  google_sheet_range: System.get_env("GOOGLE_SHEET_RANGE"),
+  google_sheet_url_header: System.get_env("GOOGLE_SHEET_URL_HEADER") || "website_url",
+  google_sheet_status_header: System.get_env("GOOGLE_SHEET_STATUS_HEADER") || "status",
+  google_drive_folder_id: System.get_env("GOOGLE_DRIVE_FOLDER_ID"),
+  upload_webhook_url: System.get_env("UPLOAD_WEBHOOK_URL")
 
 if config_env() == :prod do
   database_url =

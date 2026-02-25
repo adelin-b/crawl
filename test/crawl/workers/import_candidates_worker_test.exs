@@ -140,8 +140,8 @@ defmodule Crawl.Workers.ImportCandidatesWorkerTest do
       # Row 6 is Nil Url (should be skipped)
 
       Crawl.Integrations.GoogleSheetsMock
-      |> expect(:append_status, fn ^spreadsheet_id, ^sheet_name, 2, "PROCESSED" -> :ok end)
-      |> expect(:append_status, fn ^spreadsheet_id, ^sheet_name, 3, "PROCESSED" -> :ok end)
+      |> expect(:append_status, fn ^spreadsheet_id, ^sheet_name, 2, 15, "PROCESSED" -> :ok end)
+      |> expect(:append_status, fn ^spreadsheet_id, ^sheet_name, 3, 15, "PROCESSED" -> :ok end)
 
       # We do NOT expect append_status for row 5 or 6
 
@@ -211,6 +211,84 @@ defmodule Crawl.Workers.ImportCandidatesWorkerTest do
     end
   end
 
+  describe "dynamic column resolution" do
+    test "fails if url header is missing" do
+      spreadsheet_id = "test-sheet-id"
+      range = "Sheet1!A:O"
+
+      rows = [
+        ["candidate_id", "status"],
+        ["123", ""]
+      ]
+
+      Crawl.Integrations.GoogleSheetsMock
+      |> expect(:fetch_rows, fn ^spreadsheet_id, ^range ->
+        {:ok, rows}
+      end)
+
+      assert {:error, :url_header_not_found} =
+               ImportCandidatesWorker.perform(%Oban.Job{
+                 args: %{"spreadsheet_id" => spreadsheet_id, "range" => range}
+               })
+
+      refute_enqueued(worker: Crawl.Workers.Crawler)
+    end
+
+    test "fails if status header is missing" do
+      spreadsheet_id = "test-sheet-id"
+      range = "Sheet1!A:O"
+
+      rows = [
+        ["candidate_id", "website_url"],
+        ["123", "https://example.com"]
+      ]
+
+      Crawl.Integrations.GoogleSheetsMock
+      |> expect(:fetch_rows, fn ^spreadsheet_id, ^range ->
+        {:ok, rows}
+      end)
+
+      assert {:error, :status_header_not_found} =
+               ImportCandidatesWorker.perform(%Oban.Job{
+                 args: %{"spreadsheet_id" => spreadsheet_id, "range" => range}
+               })
+
+      refute_enqueued(worker: Crawl.Workers.Crawler)
+    end
+
+    test "succeeds when columns are in unexpected positions" do
+      spreadsheet_id = "test-sheet-id"
+      range = "Sheet1!A:O"
+      sheet_name = "Sheet1"
+
+      # URL is index 1, Status is index 2
+      rows = [
+        ["candidate_id", "WeBsItE_UrL", " STATUS "],
+        ["1", "https://one.com", ""],
+        ["2", "https://two.com", "PROCESSED"],
+        ["3", "https://three.com", ""]
+      ]
+
+      Crawl.Integrations.GoogleSheetsMock
+      |> expect(:fetch_rows, fn ^spreadsheet_id, ^range ->
+        {:ok, rows}
+      end)
+
+      Crawl.Integrations.GoogleSheetsMock
+      |> expect(:append_status, fn ^spreadsheet_id, ^sheet_name, 2, 2, "PROCESSED" -> :ok end)
+      |> expect(:append_status, fn ^spreadsheet_id, ^sheet_name, 4, 2, "PROCESSED" -> :ok end)
+
+      assert :ok =
+               ImportCandidatesWorker.perform(%Oban.Job{
+                 args: %{"spreadsheet_id" => spreadsheet_id, "range" => range}
+               })
+
+      assert_enqueued(worker: Crawl.Workers.Crawler, args: %{"url" => "https://one.com"})
+      refute_enqueued(worker: Crawl.Workers.Crawler, args: %{"url" => "https://two.com"})
+      assert_enqueued(worker: Crawl.Workers.Crawler, args: %{"url" => "https://three.com"})
+    end
+  end
+
   describe "row processing robustness" do
     test "skips first row even if it is not a header" do
       spreadsheet_id = "test-sheet-id"
@@ -220,7 +298,24 @@ defmodule Crawl.Workers.ImportCandidatesWorkerTest do
       # First row is NOT a header (candidate_id doesn't match)
       # Second row is valid data
       rows = [
-        ["not_candidate_id", "some", "data"],
+        [
+          "not_candidate_id",
+          "some",
+          "data",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "website_url",
+          "",
+          "",
+          "status"
+        ],
         [
           "cand-paris-002",
           "cand-Paris-002",
@@ -236,6 +331,7 @@ defmodule Crawl.Workers.ImportCandidatesWorkerTest do
           "",
           "https://emmanuel-gregoire-2026.fr",
           "",
+          "",
           ""
         ]
       ]
@@ -247,7 +343,7 @@ defmodule Crawl.Workers.ImportCandidatesWorkerTest do
 
       # We only expect append_status for the second row (index 2)
       Crawl.Integrations.GoogleSheetsMock
-      |> expect(:append_status, fn ^spreadsheet_id, ^sheet_name, 2, "PROCESSED" -> :ok end)
+      |> expect(:append_status, fn ^spreadsheet_id, ^sheet_name, 2, 15, "PROCESSED" -> :ok end)
 
       assert :ok =
                ImportCandidatesWorker.perform(%Oban.Job{
@@ -268,7 +364,24 @@ defmodule Crawl.Workers.ImportCandidatesWorkerTest do
       # Row with missing columns
       rows = [
         # Header
-        ["candidate_id"],
+        [
+          "candidate_id",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "website_url",
+          "",
+          "",
+          "status"
+        ],
         # Only 2 columns
         ["cand-short", "Short"]
       ]
@@ -293,7 +406,24 @@ defmodule Crawl.Workers.ImportCandidatesWorkerTest do
       sheet_name = "Sheet1"
 
       rows = [
-        ["candidate_id"],
+        [
+          "candidate_id",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "website_url",
+          "",
+          "",
+          "status"
+        ],
         [
           "cand-paris-002",
           "cand-Paris-002",
@@ -309,6 +439,7 @@ defmodule Crawl.Workers.ImportCandidatesWorkerTest do
           "",
           "https://emmanuel-gregoire-2026.fr",
           "",
+          "",
           ""
         ]
       ]
@@ -320,7 +451,7 @@ defmodule Crawl.Workers.ImportCandidatesWorkerTest do
 
       # Mock append_status failure
       Crawl.Integrations.GoogleSheetsMock
-      |> expect(:append_status, fn ^spreadsheet_id, ^sheet_name, 2, "PROCESSED" ->
+      |> expect(:append_status, fn ^spreadsheet_id, ^sheet_name, 2, 15, "PROCESSED" ->
         {:error, :update_failed}
       end)
 

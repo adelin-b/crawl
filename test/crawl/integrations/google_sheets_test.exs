@@ -21,8 +21,12 @@ defmodule Crawl.Integrations.GoogleSheetsTest do
     end
 
     @impl true
-    def append_status(spreadsheet_id, sheet_name, row_index, status) do
-      send(self(), {:stub_append_status, spreadsheet_id, sheet_name, row_index, status})
+    def append_status(spreadsheet_id, sheet_name, row_index, col_index, status) do
+      send(
+        self(),
+        {:stub_append_status, spreadsheet_id, sheet_name, row_index, col_index, status}
+      )
+
       :ok
     end
   end
@@ -55,8 +59,8 @@ defmodule Crawl.Integrations.GoogleSheetsTest do
     test "append_status delegates to configured implementation" do
       Application.put_env(:crawl, :google_sheets, Stub)
 
-      assert :ok = GoogleSheets.append_status("sheet-1", "Sheet1", 3, "PROCESSED")
-      assert_received {:stub_append_status, "sheet-1", "Sheet1", 3, "PROCESSED"}
+      assert :ok = GoogleSheets.append_status("sheet-1", "Sheet1", 3, 14, "PROCESSED")
+      assert_received {:stub_append_status, "sheet-1", "Sheet1", 3, 14, "PROCESSED"}
     end
   end
 
@@ -134,7 +138,7 @@ defmodule Crawl.Integrations.GoogleSheetsTest do
       assert log =~ "Failed to fetch rows from Google Sheets: %RuntimeError{message: \"boom\"}"
     end
 
-    test "append_status returns :ok on success" do
+    test "append_status returns :ok on success and handles column conversion" do
       TokenProviderMock
       |> expect(:fetch, fn [source: :default] -> {:ok, %Goth.Token{token: "fake-token"}} end)
 
@@ -145,7 +149,20 @@ defmodule Crawl.Integrations.GoogleSheetsTest do
         {:ok, %{}}
       end)
 
-      assert :ok = GoogleSheets.append_status("sheet-1", "Sheet1", 3, "PROCESSED")
+      assert :ok = GoogleSheets.append_status("sheet-1", "Sheet1", 3, 14, "PROCESSED")
+    end
+
+    test "append_status converts column index over 26 correctly" do
+      TokenProviderMock
+      |> expect(:fetch, fn [source: :default] -> {:ok, %Goth.Token{token: "fake-token"}} end)
+
+      ClientMock
+      |> expect(:sheets_spreadsheets_values_update, fn _conn, "sheet-1", "Sheet1!AA3", _opts ->
+        {:ok, %{}}
+      end)
+
+      # 26 corresponds to AA
+      assert :ok = GoogleSheets.append_status("sheet-1", "Sheet1", 3, 26, "PROCESSED")
     end
 
     test "append_status handles token fetch error" do
@@ -155,7 +172,7 @@ defmodule Crawl.Integrations.GoogleSheetsTest do
       log =
         capture_log(fn ->
           assert {:error, :token_error} =
-                   GoogleSheets.append_status("sheet-1", "Sheet1", 3, "PROCESSED")
+                   GoogleSheets.append_status("sheet-1", "Sheet1", 3, 14, "PROCESSED")
         end)
 
       assert log =~ "Failed to update status in Google Sheets: {:error, :token_error}"
@@ -173,7 +190,7 @@ defmodule Crawl.Integrations.GoogleSheetsTest do
       log =
         capture_log(fn ->
           assert {:error, :api_error} =
-                   GoogleSheets.append_status("sheet-1", "Sheet1", 3, "PROCESSED")
+                   GoogleSheets.append_status("sheet-1", "Sheet1", 3, 14, "PROCESSED")
         end)
 
       assert log =~ "Failed to update status in Google Sheets: {:error, :api_error}"
@@ -186,7 +203,7 @@ defmodule Crawl.Integrations.GoogleSheetsTest do
       log =
         capture_log(fn ->
           assert {:error, %RuntimeError{message: "boom"}} =
-                   GoogleSheets.append_status("sheet-1", "Sheet1", 3, "PROCESSED")
+                   GoogleSheets.append_status("sheet-1", "Sheet1", 3, 14, "PROCESSED")
         end)
 
       assert log =~ "Failed to update status in Google Sheets: %RuntimeError{message: \"boom\"}"
