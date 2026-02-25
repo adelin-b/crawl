@@ -25,3 +25,7 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 crawl-*.tar
 
+# Python crawler scripts (fetched via mix task)
+/priv/python/
+
+

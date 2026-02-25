@@ -224,5 +224,9 @@ defmodule Crawl.Integrations.PythonCrawler.Port do
   end
 
   defp python_cmd, do: Application.get_env(:crawl, :python_executable, "python3")
-  defp repo_path, do: Application.get_env(:crawl, :crawler_ingest_path, "./crawler-ingest")
+
+  defp repo_path do
+    default_path = Application.app_dir(:crawl, "priv/python/crawler-ingest")
+    Application.get_env(:crawl, :crawler_ingest_path, default_path)
+  end
 end
