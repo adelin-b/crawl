@@ -31,6 +31,9 @@ defmodule Mix.Tasks.Crawl.Python.Fetch do
     requirements.txt
   )
 
+  @doc false
+  def required_files, do: @required_files
+
   @impl Mix.Task
   def run(args) do
     Mix.Task.run("app.start")
@@ -83,7 +86,7 @@ defmodule Mix.Tasks.Crawl.Python.Fetch do
   defp resolve_branch_sha(repo, branch) do
     url = "https://api.github.com/repos/#{repo}/commits/#{branch}"
 
-    case Req.get(url, headers: [{"User-Agent", "Mix Task"}]) do
+    case http_client().get(url, headers: [{"User-Agent", "Mix Task"}]) do
       {:ok, %{status: 200, body: %{"sha" => sha}}} ->
         sha
 
@@ -104,7 +107,7 @@ defmodule Mix.Tasks.Crawl.Python.Fetch do
 
     Mix.shell().info("  Downloading #{filename}...")
 
-    case Req.get(url) do
+    case http_client().get(url) do
       {:ok, %{status: 200, body: body}} ->
         File.write!(dest_path, body)
 
@@ -121,5 +124,9 @@ defmodule Mix.Tasks.Crawl.Python.Fetch do
       _ ->
         Mix.raise("Unexpected response when downloading #{filename}")
     end
+  end
+
+  defp http_client do
+    Application.get_env(:crawl, :http_client, Req)
   end
 end
