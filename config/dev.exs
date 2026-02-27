@@ -26,6 +26,22 @@ config :crawl, CrawlWeb.Endpoint,
   secret_key_base: "mlzj4F53j9hVPTRpt3FBHiSzeDV0gO1ODh94+KRW2B/x1Lqr5jRq17CnfmtdDJOL",
   watchers: []
 
+# Graceful defaults for Google integration env vars in dev
+# These can be overridden by runtime env vars if needed
+config :crawl,
+  google_sheet_id: System.get_env("GOOGLE_SHEET_ID"),
+  google_sheet_range: System.get_env("GOOGLE_SHEET_RANGE"),
+  google_sheet_url_header: System.get_env("GOOGLE_SHEET_URL_HEADER") || "website_url",
+  google_sheet_status_header: System.get_env("GOOGLE_SHEET_STATUS_HEADER") || "status",
+  google_drive_folder_id: System.get_env("GOOGLE_DRIVE_FOLDER_ID"),
+  google_credentials_json: System.get_env("GOOGLE_APPLICATION_CREDENTIALS_JSON"),
+  python_executable: Path.expand(".venv/bin/python", File.cwd!()),
+  upload_webhook_url:
+    if(System.get_env("UPLOAD_WEBHOOK_URL") == "",
+      do: nil,
+      else: System.get_env("UPLOAD_WEBHOOK_URL")
+    )
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed

@@ -144,7 +144,7 @@ defmodule Crawl.Integrations.GoogleSheetsTest do
 
       ClientMock
       |> expect(:sheets_spreadsheets_values_update, fn _conn, "sheet-1", "Sheet1!O3", opts ->
-        assert opts[:value_input_option] == "RAW"
+        assert opts[:valueInputOption] == "RAW"
         assert %ValueRange{values: [["PROCESSED"]]} = opts[:body]
         {:ok, %{}}
       end)

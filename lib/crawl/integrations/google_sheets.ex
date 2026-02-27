@@ -74,7 +74,7 @@ defmodule Crawl.Integrations.GoogleSheets.Impl do
              conn,
              spreadsheet_id,
              range,
-             value_input_option: "RAW",
+             valueInputOption: "RAW",
              body: value_range
            ) do
       :ok

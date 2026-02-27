@@ -223,7 +223,10 @@ defmodule Crawl.Integrations.PythonCrawler.Port do
     :crypto.hash(:md5, url) |> Base.encode16(case: :lower)
   end
 
-  defp python_cmd, do: Application.get_env(:crawl, :python_executable, "python3")
+  defp python_cmd do
+    Application.get_env(:crawl, :python_executable) || System.get_env("PYTHON_EXECUTABLE") ||
+      "python3"
+  end
 
   defp repo_path do
     default_path = Application.app_dir(:crawl, "priv/python/crawler-ingest")

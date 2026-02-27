@@ -11,7 +11,12 @@ config :crawl,
   ecto_repos: [Crawl.Repo],
   generators: [timestamp_type: :utc_datetime]
 
-config :crawl, Crawl.Repo, migration_default_prefix: "crawl"
+config :crawl, Crawl.Repo,
+  after_connect: {Postgrex, :query!, ["SET search_path TO crawl,public", []]},
+  ssl_opts: [
+    # for otp26: https://elixirforum.com/t/how-to-set-ssl-options-correctly-when-connecting-to-heroku-postgres-db/59426
+    verify: :verify_none
+  ]
 
 # Configure the endpoint
 config :crawl, CrawlWeb.Endpoint,
@@ -35,8 +40,9 @@ config :phoenix, :json_library, Jason
 # Oban Configuration
 config :crawl, Oban,
   repo: Crawl.Repo,
+  prefix: "crawl",
   plugins: [
-    Oban.Plugins.Pruner,
+    {Oban.Plugins.Pruner, max_age: 432_000},
     {Oban.Plugins.Cron,
      crontab: [
        {"0 * * * *", Crawl.Workers.ImportCandidatesWorker}

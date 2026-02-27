@@ -30,6 +30,8 @@ config :crawl, :upload_webhook, Crawl.Integrations.UploadWebhookMock
 
 config :crawl, :artifact_dir, "test/tmp/artifacts"
 
+config :crawl, :google_credentials_json, nil
+
 config :crawl, :start_goth, false
 
 config :crawl, Oban,

@@ -22,15 +22,37 @@ end
 
 config :crawl, CrawlWeb.Endpoint, http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
-config :crawl,
-  google_sheet_id: System.get_env("GOOGLE_SHEET_ID"),
-  google_sheet_range: System.get_env("GOOGLE_SHEET_RANGE"),
-  google_sheet_url_header: System.get_env("GOOGLE_SHEET_URL_HEADER") || "website_url",
-  google_sheet_status_header: System.get_env("GOOGLE_SHEET_STATUS_HEADER") || "status",
-  google_drive_folder_id: System.get_env("GOOGLE_DRIVE_FOLDER_ID"),
-  upload_webhook_url: System.get_env("UPLOAD_WEBHOOK_URL")
-
 if config_env() == :prod do
+  config :crawl,
+    google_sheet_id: System.get_env("GOOGLE_SHEET_ID"),
+    google_sheet_range: System.get_env("GOOGLE_SHEET_RANGE"),
+    google_sheet_url_header: System.get_env("GOOGLE_SHEET_URL_HEADER") || "website_url",
+    google_sheet_status_header: System.get_env("GOOGLE_SHEET_STATUS_HEADER") || "status",
+    google_drive_folder_id: System.get_env("GOOGLE_DRIVE_FOLDER_ID"),
+    google_credentials_json: System.get_env("GOOGLE_APPLICATION_CREDENTIALS_JSON"),
+    upload_webhook_url:
+      if(System.get_env("UPLOAD_WEBHOOK_URL") == "",
+        do: nil,
+        else: System.get_env("UPLOAD_WEBHOOK_URL")
+      )
+
+  # Validate required Google integration env vars
+  google_sheet_id = System.get_env("GOOGLE_SHEET_ID")
+  google_sheet_range = System.get_env("GOOGLE_SHEET_RANGE")
+  google_drive_folder_id = System.get_env("GOOGLE_DRIVE_FOLDER_ID")
+  google_credentials_json = System.get_env("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+
+  if is_nil(google_sheet_id) or is_nil(google_sheet_range) or is_nil(google_drive_folder_id) or
+       is_nil(google_credentials_json) do
+    raise """
+    Required Google integration environment variables are missing in production:
+    - GOOGLE_SHEET_ID
+    - GOOGLE_SHEET_RANGE
+    - GOOGLE_DRIVE_FOLDER_ID
+    - GOOGLE_APPLICATION_CREDENTIALS_JSON (full service account JSON)
+    """
+  end
+
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """

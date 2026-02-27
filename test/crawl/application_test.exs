@@ -7,7 +7,7 @@ defmodule Crawl.ApplicationTest do
     # Save original env
     original_goth_start = Application.get_env(:crawl, :start_goth)
     original_dns = Application.get_env(:crawl, :dns_cluster_query)
-    original_json = System.get_env("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+    original_creds_json = Application.get_env(:crawl, :google_credentials_json)
 
     on_exit(fn ->
       # Restore original env
@@ -19,21 +19,28 @@ defmodule Crawl.ApplicationTest do
         do: Application.delete_env(:crawl, :dns_cluster_query),
         else: Application.put_env(:crawl, :dns_cluster_query, original_dns)
 
-      if original_json,
-        do: System.put_env("GOOGLE_APPLICATION_CREDENTIALS_JSON", original_json),
-        else: System.delete_env("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+      if original_creds_json == nil,
+        do: Application.delete_env(:crawl, :google_credentials_json),
+        else: Application.put_env(:crawl, :google_credentials_json, original_creds_json)
     end)
   end
 
   test "children/0 includes Goth when :start_goth is true (default)" do
     Application.put_env(:crawl, :start_goth, true)
-    System.put_env("GOOGLE_APPLICATION_CREDENTIALS_JSON", "{\"type\": \"service_account\"}")
+
+    json =
+      "{\"type\":\"service_account\",\"project_id\":\"test\",\"private_key_id\":\"keyid\",\"private_key\":\"key\",\"client_email\":\"test@test.iam.gserviceaccount.com\",\"client_id\":\"123\",\"token_uri\":\"https://oauth2.googleapis.com/token\"}"
+
+    Application.put_env(:crawl, :google_credentials_json, json)
 
     children = App.children()
 
     assert Enum.any?(children, fn
              {Goth,
-              [name: Crawl.Goth, source: {:service_account, %{"type" => "service_account"}}]} ->
+              [
+                name: Crawl.Goth,
+                source: {:service_account, %{"type" => "service_account"} = _creds, _opts}
+              ]} ->
                true
 
              _ ->
@@ -52,9 +59,22 @@ defmodule Crawl.ApplicationTest do
            end)
   end
 
-  test "children/0 handles invalid JSON credentials gracefully" do
+  test "children/0 handles missing credentials gracefully" do
     Application.put_env(:crawl, :start_goth, true)
-    System.put_env("GOOGLE_APPLICATION_CREDENTIALS_JSON", "invalid-json")
+    # Do not set :google_credentials_json
+
+    children = App.children()
+
+    assert Enum.any?(children, fn
+             {Goth, [name: Crawl.Goth, source: {:service_account, %{}}]} -> true
+             _ -> false
+           end)
+  end
+
+  test "children/0 uses empty credentials when env var is not set (dev default)" do
+    Application.put_env(:crawl, :start_goth, true)
+    # Simulate dev environment where GOOGLE_APPLICATION_CREDENTIALS_JSON is not set
+    Application.put_env(:crawl, :google_credentials_json, nil)
 
     children = App.children()
 

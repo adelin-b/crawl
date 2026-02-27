@@ -6,5 +6,6 @@ defmodule Crawl.Integrations.GoogleSheets.TokenProvider do
 
   def fetch(opts), do: impl().fetch(opts)
 
-  defp impl, do: Application.get_env(:crawl, :goth_token_provider, Goth.Token)
+  defp impl,
+    do: Application.get_env(:crawl, :goth_token_provider, Crawl.Integrations.GothTokenProvider)
 end

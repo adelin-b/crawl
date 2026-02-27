@@ -42,18 +42,26 @@ defmodule Crawl.Application do
 
   defp goth_children do
     if Application.get_env(:crawl, :start_goth, true) do
-      # Make sure to handle potential JSON errors gracefully or assume valid input in prod
-      json = System.get_env("GOOGLE_APPLICATION_CREDENTIALS_JSON", "{}")
+      # Read raw JSON string from app config (wired from env in runtime.exs)
+      json = Application.get_env(:crawl, :google_credentials_json)
 
       source =
-        case Jason.decode(json) do
-          {:ok, decoded} -> {:service_account, decoded}
-          {:error, _} -> {:service_account, %{}}
+        case Crawl.GoogleCredentials.build_source(json) do
+          {:ok, built} -> built
+          {:error, reason} -> handle_goth_error(reason)
         end
 
       [{Goth, name: Crawl.Goth, source: source}]
     else
       []
+    end
+  end
+
+  defp handle_goth_error(reason) do
+    if Mix.env() == :prod do
+      raise "Failed to build Goth source: #{reason}"
+    else
+      {:service_account, %{}}
     end
   end
 end
