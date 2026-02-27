@@ -1,18 +1,19 @@
-FROM geeks5olutions/elixir_rust:1.19.2 AS build
-# prepare build dir
-WORKDIR /app
+# ---- Build Stage ----
+FROM hexpm/elixir:1.19.2-erlang-28.0-debian-bookworm-20240926-slim AS build
 
-# set build ENV
+ARG CI_JOB_TOKEN
+WORKDIR /app
 ENV MIX_ENV=prod
+
+# Install git and build tools
+RUN apt-get update && apt-get install -y git build-essential && rm -rf /var/lib/apt/lists/*
 
 # install mix dependencies
 COPY mix.exs mix.lock ./
-COPY config config
+RUN mix local.hex --force && mix local.rebar --force
 RUN mix do deps.get, deps.compile
 
 COPY priv priv
-
-# compile and build release
 COPY lib lib
 
 # Fetch the python scripts. 
@@ -30,29 +31,44 @@ RUN GOOGLE_SHEET_ID=dummy \
 
 RUN mix do compile, release
 
-# prepare release image
-FROM alpine:3.20 AS app
-RUN apk add --no-cache openssl ncurses-libs libgcc libstdc++ ffmpeg imagemagick ttf-liberation python3 py3-pip
+# ---- Run Stage ----
+FROM debian:bookworm-slim AS app
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    openssl \
+    libncurses6 \
+    libstdc++6 \
+    ffmpeg \
+    imagemagick \
+    fonts-liberation \
+    python3 \
+    python3-pip \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-RUN chown nobody:nobody /app
-
-USER nobody:nobody
-
-# Create a python virtual environment
+# Create python venv & install deps
 RUN python3 -m venv /app/.venv
-
-# Copy python requirements and install them inside the venv
-COPY --from=build --chown=nobody:nobody /app/priv/python/crawler-ingest/requirements.txt /app/requirements.txt
+COPY --from=build /app/priv/python/crawler-ingest/requirements.txt /app/requirements.txt
 RUN /app/.venv/bin/pip install --no-cache-dir -r /app/requirements.txt
 
-COPY --from=build --chown=nobody:nobody /app/_build/prod/rel ./
+# Install Playwright and its system dependencies
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/pw-browsers
+RUN /app/.venv/bin/playwright install chromium
+RUN /app/.venv/bin/playwright install-deps chromium
+
+# Secure the app directory
+RUN chown -R nobody:nogroup /app
+USER nobody:nogroup
+
+COPY --from=build --chown=nobody:nogroup /app/_build/prod/rel ./
 
 ENV HOME=/app
 ENV PYTHON_EXECUTABLE=/app/.venv/bin/python
 
-COPY entrypoint.sh .
+COPY --chown=nobody:nogroup entrypoint.sh .
 
 # Run the Phoenix app
 CMD ["./entrypoint.sh"]
