@@ -36,7 +36,7 @@ defmodule Crawl.Workers.Crawler do
     crawl_key = "crawl_#{job_id}_#{Ecto.UUID.generate()}"
     zip_filename = "#{crawl_key}.zip"
 
-    artifact_dir = Application.get_env(:crawl, :artifact_dir) || "/tmp/crawl_artifacts"
+    artifact_dir = Application.fetch_env!(:crawl, :artifact_dir)
     zip_path = Path.join(artifact_dir, zip_filename)
 
     # Zip the assets

@@ -80,7 +80,15 @@ defmodule Mix.Tasks.Crawl.Python.Fetch do
     File.write!(Path.join(dest, "manifest.json"), Jason.encode!(manifest, pretty: true))
 
     Mix.shell().info([:green, "✓ Successfully fetched python scripts to #{dest}"])
-    Mix.shell().info([:yellow, "Don't forget to run `pip install -r #{dest}/requirements.txt`"])
+
+    Mix.shell().info([
+      :yellow,
+      "Don't forget to install the requirements inside a virtual environment:"
+    ])
+
+    Mix.shell().info([:yellow, "  python3 -m venv .venv"])
+    Mix.shell().info([:yellow, "  source .venv/bin/activate"])
+    Mix.shell().info([:yellow, "  pip install -r #{dest}/requirements.txt"])
   end
 
   defp resolve_branch_sha(repo, branch) do

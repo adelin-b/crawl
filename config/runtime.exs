@@ -30,6 +30,7 @@ if config_env() == :prod do
     google_sheet_status_header: System.get_env("GOOGLE_SHEET_STATUS_HEADER") || "status",
     google_drive_folder_id: System.get_env("GOOGLE_DRIVE_FOLDER_ID"),
     google_credentials_json: System.get_env("GOOGLE_APPLICATION_CREDENTIALS_JSON"),
+    artifact_dir: System.get_env("CRAWL_ARTIFACT_DIR"),
     upload_webhook_url:
       if(System.get_env("UPLOAD_WEBHOOK_URL") == "",
         do: nil,
@@ -41,15 +42,17 @@ if config_env() == :prod do
   google_sheet_range = System.get_env("GOOGLE_SHEET_RANGE")
   google_drive_folder_id = System.get_env("GOOGLE_DRIVE_FOLDER_ID")
   google_credentials_json = System.get_env("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+  artifact_dir = System.get_env("CRAWL_ARTIFACT_DIR")
 
   if is_nil(google_sheet_id) or is_nil(google_sheet_range) or is_nil(google_drive_folder_id) or
-       is_nil(google_credentials_json) do
+       is_nil(google_credentials_json) or is_nil(artifact_dir) do
     raise """
-    Required Google integration environment variables are missing in production:
+    Required integration environment variables are missing in production:
     - GOOGLE_SHEET_ID
     - GOOGLE_SHEET_RANGE
     - GOOGLE_DRIVE_FOLDER_ID
     - GOOGLE_APPLICATION_CREDENTIALS_JSON (full service account JSON)
+    - CRAWL_ARTIFACT_DIR
     """
   end
 

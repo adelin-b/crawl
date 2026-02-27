@@ -87,6 +87,7 @@ Here are the environment variables that control the application:
 *   `SCALEWAY_API_KEY`: API key for Scaleway (used by the Python crawler for Pixtral image-to-text processing).
 
 ### Application & Database (Standard)
+*   `CRAWL_ARTIFACT_DIR`: The absolute path to the directory where crawled zip files are temporarily stored (required in production, defaults to `/tmp/crawl_artifacts` in dev).
 *   `DATABASE_URL`: Connection string to your PostgreSQL database (required in production).
 *   `SECRET_KEY_BASE`: Secret key for Phoenix sessions (required in production).
 *   `PORT`: Port to run the Phoenix application on (defaults to `4000`).

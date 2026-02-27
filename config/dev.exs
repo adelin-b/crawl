@@ -35,6 +35,7 @@ config :crawl,
   google_sheet_status_header: System.get_env("GOOGLE_SHEET_STATUS_HEADER") || "status",
   google_drive_folder_id: System.get_env("GOOGLE_DRIVE_FOLDER_ID"),
   google_credentials_json: System.get_env("GOOGLE_APPLICATION_CREDENTIALS_JSON"),
+  artifact_dir: System.get_env("CRAWL_ARTIFACT_DIR") || "/tmp/crawl_artifacts",
   python_executable: Path.expand(".venv/bin/python", File.cwd!()),
   upload_webhook_url:
     if(System.get_env("UPLOAD_WEBHOOK_URL") == "",
