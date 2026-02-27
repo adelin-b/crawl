@@ -36,7 +36,7 @@ defmodule Mix.Tasks.Crawl.Python.Fetch do
 
   @impl Mix.Task
   def run(args) do
-    Mix.Task.run("app.start")
+    ensure_http_client_started()
 
     {opts, _} =
       OptionParser.parse!(args,
@@ -89,6 +89,21 @@ defmodule Mix.Tasks.Crawl.Python.Fetch do
     Mix.shell().info([:yellow, "  python3 -m venv .venv"])
     Mix.shell().info([:yellow, "  source .venv/bin/activate"])
     Mix.shell().info([:yellow, "  pip install -r #{dest}/requirements.txt"])
+  end
+
+  defp ensure_http_client_started do
+    if http_client() == Req do
+      case Application.ensure_all_started(:req) do
+        {:ok, _started_apps} ->
+          :ok
+
+        {:error, {app, reason}} ->
+          Mix.raise("Failed to start #{inspect(app)} required for Req: #{inspect(reason)}")
+
+        {:error, reason} ->
+          Mix.raise("Failed to start Req dependencies: #{inspect(reason)}")
+      end
+    end
   end
 
   defp resolve_branch_sha(repo, branch) do

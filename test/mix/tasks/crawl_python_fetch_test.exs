@@ -173,5 +173,35 @@ defmodule Mix.Tasks.Crawl.Python.FetchTest do
         Fetch.run(["--commit", sha, "--repo", repo, "--dest", dest])
       end
     end
+
+    test "does not require Oban config to fetch files", %{dest: dest} do
+      original_oban_config = Application.get_env(:crawl, Oban)
+      Application.delete_env(:crawl, Oban)
+
+      on_exit(fn ->
+        if original_oban_config do
+          Application.put_env(:crawl, Oban, original_oban_config)
+        else
+          Application.delete_env(:crawl, Oban)
+        end
+      end)
+
+      sha = "123456"
+      repo = "test/repo"
+
+      Fetch.required_files()
+      |> Enum.each(fn filename ->
+        url = "https://raw.githubusercontent.com/#{repo}/#{sha}/#{filename}"
+
+        Crawl.HTTPClientMock
+        |> expect(:get, fn ^url ->
+          {:ok, %{status: 200, body: "content of #{filename}"}}
+        end)
+      end)
+
+      Fetch.run(["--commit", sha, "--repo", repo, "--dest", dest])
+
+      assert File.exists?(Path.join(dest, "manifest.json"))
+    end
   end
 end
