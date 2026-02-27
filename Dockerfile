@@ -15,10 +15,8 @@ RUN mix do deps.get, deps.compile
 COPY priv priv
 COPY lib lib
 
-# Fetch the python scripts. 
-# We pass dummy environment variables because the fetch task starts the application,
-# which evaluates config/runtime.exs and enforces these variables in the prod environment.
-# We also temporarily disable Goth to avoid it crashing on the dummy credentials.
+# Fetch the python scripts.
+# MIX_ENV=prod evaluates config/runtime.exs, which enforces required prod env vars.
 RUN GOOGLE_SHEET_ID=dummy \
     GOOGLE_SHEET_RANGE=dummy \
     GOOGLE_DRIVE_FOLDER_ID=dummy \
@@ -26,7 +24,7 @@ RUN GOOGLE_SHEET_ID=dummy \
     CRAWL_ARTIFACT_DIR=dummy \
     DATABASE_URL=ecto://postgres:postgres@localhost/db \
     SECRET_KEY_BASE=dummy_secret_key_base_string_that_is_long_enough \
-    mix run --no-start -e "Application.put_env(:crawl, :start_goth, false); Mix.Tasks.Crawl.Python.Fetch.run([])"
+    mix crawl.python.fetch
 
 RUN mix do compile, release
 
