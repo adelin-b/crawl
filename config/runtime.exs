@@ -31,6 +31,7 @@ if config_env() == :prod do
     google_drive_folder_id: System.get_env("GOOGLE_DRIVE_FOLDER_ID"),
     google_credentials_json: System.get_env("GOOGLE_APPLICATION_CREDENTIALS_JSON"),
     artifact_dir: System.get_env("CRAWL_ARTIFACT_DIR"),
+    python_executable: System.get_env("PYTHON_EXECUTABLE") || "python3",
     upload_webhook_url:
       if(System.get_env("UPLOAD_WEBHOOK_URL") == "",
         do: nil,

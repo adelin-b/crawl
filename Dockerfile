@@ -23,6 +23,7 @@ RUN GOOGLE_SHEET_ID=dummy \
     GOOGLE_SHEET_RANGE=dummy \
     GOOGLE_DRIVE_FOLDER_ID=dummy \
     GOOGLE_APPLICATION_CREDENTIALS_JSON="{}" \
+    CRAWL_ARTIFACT_DIR=dummy \
     DATABASE_URL=ecto://postgres:postgres@localhost/db \
     SECRET_KEY_BASE=dummy_secret_key_base_string_that_is_long_enough \
     mix run --no-start -e "Application.put_env(:crawl, :start_goth, false); Mix.Tasks.Crawl.Python.Fetch.run([])"

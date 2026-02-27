@@ -224,8 +224,7 @@ defmodule Crawl.Integrations.PythonCrawler.Port do
   end
 
   defp python_cmd do
-    Application.get_env(:crawl, :python_executable) || System.get_env("PYTHON_EXECUTABLE") ||
-      "python3"
+    Application.get_env(:crawl, :python_executable, "python3")
   end
 
   defp repo_path do
