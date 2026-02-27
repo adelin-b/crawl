@@ -1,7 +1,6 @@
 # ---- Build Stage ----
-FROM hexpm/elixir:1.19.2-erlang-28.0-debian-bookworm-20240926-slim AS build
+FROM elixir:1.19.2-otp-28-slim AS build
 
-ARG CI_JOB_TOKEN
 WORKDIR /app
 ENV MIX_ENV=prod
 
@@ -31,6 +30,9 @@ RUN GOOGLE_SHEET_ID=dummy \
 
 RUN mix do compile, release
 
+# Keep a stable path to the release-bundled Python requirements
+RUN cp /app/_build/prod/rel/crawl/lib/crawl-*/priv/python/crawler-ingest/requirements.txt /app/release-requirements.txt
+
 # ---- Run Stage ----
 FROM debian:bookworm-slim AS app
 
@@ -51,7 +53,7 @@ WORKDIR /app
 
 # Create python venv & install deps
 RUN python3 -m venv /app/.venv
-COPY --from=build /app/priv/python/crawler-ingest/requirements.txt /app/requirements.txt
+COPY --from=build /app/release-requirements.txt /app/requirements.txt
 RUN /app/.venv/bin/pip install --no-cache-dir -r /app/requirements.txt
 
 # Install Playwright and its system dependencies
@@ -71,4 +73,4 @@ ENV PYTHON_EXECUTABLE=/app/.venv/bin/python
 COPY --chown=nobody:nogroup entrypoint.sh .
 
 # Run the Phoenix app
-CMD ["./entrypoint.sh"]
+CMD ["sh", "./entrypoint.sh"]
