@@ -22,7 +22,11 @@ defmodule Crawl.Integrations.GoogleDrive.Impl do
     with {:ok, token} <- TokenProvider.fetch(source: :default),
          conn = V3.Connection.new(token.token),
          {:ok, file} <-
-           Client.drive_files_create(conn, body: file_metadata, fields: "id") do
+           Client.drive_files_create(conn,
+             body: file_metadata,
+             fields: "id",
+             supportsAllDrives: true
+           ) do
       {:ok, file.id}
     else
       error ->
@@ -51,7 +55,8 @@ defmodule Crawl.Integrations.GoogleDrive.Impl do
              "multipart",
              file_metadata,
              path,
-             fields: "id"
+             fields: "id",
+             supportsAllDrives: true
            ) do
       {:ok, file.id}
     else
