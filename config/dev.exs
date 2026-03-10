@@ -67,6 +67,7 @@ config :crawl,
 # different ports.
 
 # Enable dev routes for dashboard and mailbox
+config :crawl, env: :dev
 config :crawl, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs

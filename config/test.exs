@@ -32,6 +32,7 @@ config :crawl, :artifact_dir, "test/tmp/artifacts"
 
 config :crawl, :google_credentials_json, nil
 
+config :crawl, env: :test
 config :crawl, :start_goth, false
 
 config :crawl, Oban,
