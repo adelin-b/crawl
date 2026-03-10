@@ -68,6 +68,7 @@ COPY --from=build --chown=nobody:nogroup /app/_build/prod/rel ./
 
 ENV HOME=/app
 ENV PYTHON_EXECUTABLE=/app/.venv/bin/python
+ENV ELIXIR_ERL_OPTIONS="+fnu"
 
 COPY --chown=nobody:nogroup entrypoint.sh .
 

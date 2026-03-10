@@ -1,0 +1,60 @@
+name: Production Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+env:
+  SCW_REGION: fr-par
+  SCW_REGISTRY: rg.fr-par.scw.cloud/chatvote
+  K8S_CLUSTER_ID: 968e9bdf-3d30-4562-91d5-cc6ccedd9039
+  K8S_NAMESPACE: chatvote
+  K8S_DEPLOYMENT: crawl-ed-deployment
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Docker build & push to Scaleway registry ──────────────────
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: rg.fr-par.scw.cloud
+          username: nologin
+          password: ${{ secrets.SCW_SECRET_KEY }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.SCW_REGISTRY }}/crawl:${{ github.sha }}
+            ${{ env.SCW_REGISTRY }}/crawl:latest
+          cache-from: type=registry,ref=${{ env.SCW_REGISTRY }}/crawl:cache
+          cache-to: type=registry,ref=${{ env.SCW_REGISTRY }}/crawl:cache,mode=max
+
+      # ── Deploy to K8s ─────────────────────────────────────────────
+      - name: Install Scaleway CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/scaleway/scaleway-cli/master/scripts/get.sh | sh
+          scw init access-key=${{ secrets.SCW_ACCESS_KEY }} secret-key=${{ secrets.SCW_SECRET_KEY }} \
+            organization-id=${{ secrets.SCW_PROJECT_ID }} project-id=${{ secrets.SCW_PROJECT_ID }} \
+            send-telemetry=false install-autocomplete=false with-ssh-key=false
+
+      - name: Configure kubectl
+        run: scw k8s kubeconfig install ${{ env.K8S_CLUSTER_ID }} region=${{ env.SCW_REGION }}
+
+      - name: Update deployment image
+        run: |
+          kubectl -n ${{ env.K8S_NAMESPACE }} set image deployment/${{ env.K8S_DEPLOYMENT }} \
+            app=${{ env.SCW_REGISTRY }}/crawl:${{ github.sha }}
+          kubectl -n ${{ env.K8S_NAMESPACE }} rollout status deployment/${{ env.K8S_DEPLOYMENT }} --timeout=300s
