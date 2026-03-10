@@ -58,7 +58,7 @@ defmodule Crawl.Application do
   end
 
   defp handle_goth_error(reason) do
-    if Mix.env() == :prod do
+    if Application.get_env(:crawl, :env, :prod) == :prod do
       raise "Failed to build Goth source: #{reason}"
     else
       {:service_account, %{}}

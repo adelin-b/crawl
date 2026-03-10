@@ -10,6 +10,8 @@ config :crawl, CrawlWeb.Endpoint,
     hosts: ["localhost", "127.0.0.1"]
   ]
 
+config :crawl, env: :prod
+
 # Do not print debug messages in production
 config :logger, level: :info
 

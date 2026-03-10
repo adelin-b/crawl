@@ -12,6 +12,7 @@ COPY mix.exs mix.lock ./
 RUN mix local.hex --force && mix local.rebar --force
 RUN mix do deps.get, deps.compile
 
+COPY config config
 COPY priv priv
 COPY lib lib
 
@@ -67,6 +68,7 @@ COPY --from=build --chown=nobody:nogroup /app/_build/prod/rel ./
 
 ENV HOME=/app
 ENV PYTHON_EXECUTABLE=/app/.venv/bin/python
+ENV ELIXIR_ERL_OPTIONS="+fnu"
 
 COPY --chown=nobody:nogroup entrypoint.sh .
 
