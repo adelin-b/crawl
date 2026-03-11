@@ -53,8 +53,10 @@ jobs:
       - name: Configure kubectl
         run: scw k8s kubeconfig install ${{ env.K8S_CLUSTER_ID }} region=${{ env.SCW_REGION }}
 
-      - name: Update deployment image
+      - name: Update deployment image and env
         run: |
+          kubectl -n ${{ env.K8S_NAMESPACE }} set env deployment/${{ env.K8S_DEPLOYMENT }} \
+            CRAWL_API_SECRET=${{ secrets.CRAWL_API_SECRET }}
           kubectl -n ${{ env.K8S_NAMESPACE }} set image deployment/${{ env.K8S_DEPLOYMENT }} \
             app=${{ env.SCW_REGISTRY }}/crawl:${{ github.sha }}
           kubectl -n ${{ env.K8S_NAMESPACE }} rollout status deployment/${{ env.K8S_DEPLOYMENT }} --timeout=300s
