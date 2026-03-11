@@ -36,14 +36,11 @@ defmodule CrawlWeb.ImportController do
   defp authorized?(conn, params) do
     expected = Application.get_env(:crawl, :api_secret)
 
-    cond do
-      is_nil(expected) or expected == "" ->
-        # No secret configured — reject all requests
-        false
-
-      true ->
-        token_from_header(conn) == expected or
-          Map.get(params, "secret") == expected
+    if is_nil(expected) or expected == "" do
+      false
+    else
+      token_from_header(conn) == expected or
+        Map.get(params, "secret") == expected
     end
   end
 
