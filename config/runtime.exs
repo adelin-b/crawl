@@ -22,6 +22,9 @@ end
 
 config :crawl, CrawlWeb.Endpoint, http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# API secret for on-demand import trigger (POST /api/import)
+config :crawl, api_secret: System.get_env("CRAWL_API_SECRET")
+
 if config_env() == :prod do
   config :crawl,
     google_sheet_id: System.get_env("GOOGLE_SHEET_ID"),

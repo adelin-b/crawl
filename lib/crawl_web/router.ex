@@ -7,6 +7,8 @@ defmodule CrawlWeb.Router do
 
   scope "/api", CrawlWeb do
     pipe_through :api
+
+    post "/import", ImportController, :create
   end
 
   # Enable LiveDashboard in development
